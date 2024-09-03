@@ -1,0 +1,38 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, test result, and code coverage tool reports
+*.out
+*.test
+*.cover
+
+# Output of the go coverage tool
+*.cov
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Dependencies (if using vendoring)
+vendor/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Node modules (if using JavaScript/Node.js)
+node_modules/
+
+# Godotenv .env file
+.env
+
+# Build directory
+/build/
