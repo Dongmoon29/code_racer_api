@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Dongmoon29/codeRacer_api/config"
+	"github.com/Dongmoon29/code_racer_api/config"
 )
 
 func main() {

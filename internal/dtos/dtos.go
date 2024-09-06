@@ -1,8 +1,10 @@
 package dtos
 
 type CodeSubmissionRequest struct {
-	SourceCode string `json:"source_code"`
-	LanguageID int    `json:"language_id"`
+	SourceCode     string `json:"source_code"`
+	LanguageID     int    `json:"language_id"`
+	Stdin          string `json:"stdin,omitempty"`
+	ExpectedOutput string `json:"expected_output,omitempty"`
 }
 
 type CodeSubmissionResponse struct {

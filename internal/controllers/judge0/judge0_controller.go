@@ -3,15 +3,17 @@ package judge0
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sync"
 
-	"github.com/Dongmoon29/codeRacer_api/internal/services"
-	"github.com/Dongmoon29/codeRacer_api/internal/util"
+	"github.com/Dongmoon29/code_racer_api/internal/dtos"
+	"github.com/Dongmoon29/code_racer_api/internal/services/judge0"
+	"github.com/Dongmoon29/code_racer_api/internal/util"
 	"github.com/gin-gonic/gin"
 )
 
 type Judge0Controller struct {
-	Judge0Service services.Judge0Service
+	Judge0Service judge0.Judge0Service
 }
 
 var (
@@ -19,7 +21,7 @@ var (
 	once     sync.Once
 )
 
-func NewJudge0Controller(judge0Service services.Judge0Service) *Judge0Controller {
+func NewJudge0Controller(judge0Service judge0.Judge0Service) *Judge0Controller {
 	once.Do(func() {
 		instance = &Judge0Controller{
 			Judge0Service: judge0Service,
@@ -50,10 +52,20 @@ func (jc *Judge0Controller) GetAbout(c *gin.Context) {
 	c.JSON(200, gin.H{"response": response})
 }
 
-func (jc *Judge0Controller) CreateCodeSubmission(c *gin.Context) {
-	c.JSON(200, "testing")
+func (jc *Judge0Controller) HandleCreateCodeSubmission(c *gin.Context) {
+	var req dtos.CodeSubmissionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid dto"})
+		return
+	}
+	result, err := jc.Judge0Service.CreateCodeSubmission(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "error"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, result)
 }
 
-func (jc *Judge0Controller) GetCodeSubmission(c *gin.Context) {
-	c.JSON(200, "testing")
+func (jc *Judge0Controller) HandleGetCodeSubmission(c *gin.Context) {
 }
