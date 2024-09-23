@@ -21,3 +21,22 @@ type CodeSubmissionResult struct {
 	Time   string `json:"time"`
 	Memory string `json:"memory"`
 }
+
+type CreateGameRoomDto struct {
+	RoomName string `json:"room_name"`
+}
+
+type CreateGameRoomResponseDto struct {
+	Ok      bool   `json:"ok"`
+	Message string `json:"message"`
+	RoomID  string `json:"room_id,omitempty"`
+}
+
+type JoinGameRoomDto struct {
+	Id string `json:"id"`
+}
+
+type JoinGameRoomResponseDto struct {
+	Ok      bool   `json:"ok"`
+	Message string `json:"message"`
+}

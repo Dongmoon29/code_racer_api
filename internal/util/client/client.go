@@ -1,16 +1,16 @@
-package util
+package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"sync"
 
-	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 type Judge0Client struct {
@@ -19,23 +19,41 @@ type Judge0Client struct {
 	host   string
 }
 
+type RedisClientInterface interface {
+	Set(ctx context.Context, key string, value interface{}) error
+	Get(ctx context.Context, key string) (string, error)
+	Incr(ctx context.Context, key string)
+}
+
+type RedisClient struct {
+	client *redis.Client
+}
+
 var (
-	Client *Judge0Client
-	once   sync.Once
+	J0Client  *Judge0Client
+	RdsClient *RedisClient
+	once      sync.Once
 )
 
 func init() {
+	judge0apikey := os.Getenv("X_JUDGE0_KEY")
+	judge0Host := os.Getenv("X_JUDGE0_HOST")
+	rdsHost := os.Getenv("RDS_HOST")
+	rdsPort := os.Getenv("RDS_PORT")
 
-	envPath := filepath.Join(os.Getenv("PWD"), ".env")
-	err := godotenv.Load(envPath)
-	if err != nil {
-		log.Fatalf("cannot load .env")
-	}
+	log.Printf("%s, %s", rdsHost, rdsPort)
+
 	once.Do(func() {
-		Client = &Judge0Client{
+		RdsClient = &RedisClient{
+			client: redis.NewClient(&redis.Options{
+				// Addr: fmt.Sprintf("%s:%s", rdsHost, rdsPort),
+				Addr: "localhost:6379",
+			}),
+		}
+		J0Client = &Judge0Client{
 			client: &http.Client{},
-			apiKey: os.Getenv("X_JUDGE0_KEY"),
-			host:   os.Getenv("X_JUDGE0_HOST"),
+			apiKey: judge0apikey,
+			host:   judge0Host,
 		}
 	})
 }
@@ -86,4 +104,34 @@ func (c *Judge0Client) judge0Request(method, endpoint string, body interface{}) 
 	req.Header.Set("x-rapidapi-host", c.host)
 
 	return req, nil
+}
+
+func CacheOperation(redisClientInterface RedisClientInterface, key string, value string) error {
+	if err := redisClientInterface.Set(context.Background(), key, value); err != nil {
+		log.Printf("failed to set value: %v", err)
+		return err
+	}
+	return nil
+}
+
+// func (c *RedisClient) generateGameRoomID() (int64, error) {
+// 	ctx := context.Background()
+// 	return c.client.Incr(ctx, "game:room:id").Result()
+// }
+
+func (c *RedisClient) Get(ctx context.Context, key string) (*string, error) {
+	result, err := c.client.Get(ctx, key).Result()
+	log.Printf("result => %s", result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *RedisClient) Set(ctx context.Context, key string, value interface{}) error {
+	err := c.client.Set(ctx, key, value, 0).Err() // 0 means no expiration
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/Dongmoon29/code_racer_api/db"
 	gameController "github.com/Dongmoon29/code_racer_api/internal/controllers/game"
@@ -34,12 +33,13 @@ func (app *App) initialize() {
 }
 
 func (app *App) setRoutes() *gin.Engine {
+	webHost := os.Getenv("CODERACER_WEB")
 	r := gin.Default()
-	// CORS 설정
+	// setup CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},  // 클라이언트 도메인
-		AllowMethods:     []string{"POST", "GET", "OPTIONS"}, // 허용할 메서드
-		AllowHeaders:     []string{"Origin", "Content-Type"}, // 허용할 헤더
+		AllowOrigins:     []string{webHost},
+		AllowMethods:     []string{"POST", "GET", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
@@ -51,17 +51,6 @@ func (app *App) setRoutes() *gin.Engine {
 	return r
 }
 
-func (app *App) setGameRoutes(rg *gin.RouterGroup) {
-	gs := gameService.NewGameService()
-	gc := gameController.NewGameController(gs)
-
-	gg := rg.Group("/games")
-	{
-		// WebSocket을 통한 게임 로비 기능 라우트 추가
-		gg.GET("/:id", gc.HandleWebSocket)
-	}
-}
-
 func (app *App) setJudge0Routes(rg *gin.RouterGroup) {
 	js := judge0Service.NewJudge0Service()
 	jc := judge0Controller.NewJudge0Controller(js)
@@ -70,16 +59,24 @@ func (app *App) setJudge0Routes(rg *gin.RouterGroup) {
 	{
 		cg.GET("/about", jc.GetAbout)
 		cg.POST("/submit", jc.HandleCreateCodeSubmission)
-		cg.GET("/submit", jc.HandleGetCodeSubmission)
+	}
+}
+
+func (app *App) setGameRoutes(rg *gin.RouterGroup) {
+	gs := gameService.NewGameService()
+	gc := gameController.NewGameController(gs)
+
+	gg := rg.Group("/games")
+	{
+		gg.POST("", gc.HandleCreateGameRoom)
+		gg.GET("/:id", gc.HandleJoinGameRoom)
 	}
 }
 
 func (app *App) Start() {
-	envPath := filepath.Join(os.Getenv("PWD"), ".env")
-	err := godotenv.Load(envPath)
+	err := godotenv.Load()
 	if err != nil {
-		fmt.Println("godotenv load error")
-		log.Fatalln(err)
+		log.Fatalln("godotenv load error")
 	}
 
 	port := os.Getenv("PORT")

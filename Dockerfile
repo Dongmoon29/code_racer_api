@@ -14,9 +14,9 @@ RUN go mod download
 COPY . .
 
 # Set the working directory to the location of main.go
-WORKDIR /app/cmd/app
+WORKDIR /app/cmd/api
 
-# Build the Go app
+# Build the Go app and place the binary in /app
 RUN go build -o /app/main .
 
 # Stage 2: Run the binary
@@ -24,6 +24,7 @@ FROM alpine:latest
 
 WORKDIR /app
 
+# Copy the binary from the build stage
 COPY --from=builder /app/main .
 
 # Command to run the executable

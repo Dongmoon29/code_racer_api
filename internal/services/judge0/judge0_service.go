@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
-	"github.com/Dongmoon29/code_racer_api/internal/util"
+	"github.com/Dongmoon29/code_racer_api/internal/util/client"
 )
 
 type Judge0Service struct {
@@ -16,10 +16,9 @@ func NewJudge0Service() Judge0Service {
 }
 
 func (js *Judge0Service) CreateCodeSubmission(dto dtos.CodeSubmissionRequest) (map[string]interface{}, error) {
-	// 요청 데이터를 JSON으로 변환
 	submissionData := mapJudge0Request(dto)
 
-	response, err := util.Client.POST("/submissions?base64_encoded=false&wait=true", submissionData)
+	response, err := client.J0Client.POST("/submissions?base64_encoded=false&wait=true", submissionData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to submit code: %w", err)
 	}

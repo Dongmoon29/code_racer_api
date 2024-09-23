@@ -8,7 +8,7 @@ import (
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
 	"github.com/Dongmoon29/code_racer_api/internal/services/judge0"
-	"github.com/Dongmoon29/code_racer_api/internal/util"
+	"github.com/Dongmoon29/code_racer_api/internal/util/client"
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,7 +31,7 @@ func NewJudge0Controller(judge0Service judge0.Judge0Service) *Judge0Controller {
 }
 
 func (jc *Judge0Controller) GetAbout(c *gin.Context) {
-	client := util.Client
+	client := client.J0Client
 	res, err := client.GET("/about")
 	if err != nil {
 
@@ -53,19 +53,16 @@ func (jc *Judge0Controller) GetAbout(c *gin.Context) {
 }
 
 func (jc *Judge0Controller) HandleCreateCodeSubmission(c *gin.Context) {
-	var req dtos.CodeSubmissionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var codeSubmissionRequestDto dtos.CodeSubmissionRequest
+	if err := c.ShouldBindJSON(&codeSubmissionRequestDto); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid dto"})
 		return
 	}
-	result, err := jc.Judge0Service.CreateCodeSubmission(req)
+	result, err := jc.Judge0Service.CreateCodeSubmission(codeSubmissionRequestDto)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "error"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, result)
-}
-
-func (jc *Judge0Controller) HandleGetCodeSubmission(c *gin.Context) {
 }

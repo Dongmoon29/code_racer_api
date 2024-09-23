@@ -1,21 +1,21 @@
-version: '3.8'
-
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - '8080:8080' # Go application port mapping
-    environment:
-      - DB_HOST=localhost
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=example
-      - DB_NAME=mydb
-    depends_on:
-      - db
-
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - '8080:8080'
+  #   environment:
+  #     - DB_HOST=localhost
+  #     - DB_PORT=5432
+  #     - DB_USER=postgres
+  #     - DB_PASSWORD=example
+  #     - DB_NAME=mydb
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - db
+  #     - redis
   db:
     image: postgres
     environment:
@@ -27,6 +27,12 @@ services:
     ports:
       - '5432:5432'
     container_name: postgres
+
+  redis:
+    image: redis:alpine
+    ports:
+      - '6379:6379'
+    container_name: redis
 
 volumes:
   postgres_data:
