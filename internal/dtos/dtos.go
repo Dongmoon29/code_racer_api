@@ -40,3 +40,8 @@ type JoinGameRoomResponseDto struct {
 	Ok      bool   `json:"ok"`
 	Message string `json:"message"`
 }
+
+type GameRoomsDto struct {
+	Id       string `json:"id"`
+	RoomName string `json:"room_name"`
+}

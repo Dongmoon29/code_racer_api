@@ -7,9 +7,12 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/Dongmoon29/code_racer_api/internal/dtos"
 	"github.com/Dongmoon29/code_racer_api/internal/util/client"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
@@ -85,27 +88,38 @@ func (room *GameRoom) run() {
 	}
 }
 
+func (gc *GameService) GetGameRooms() dtos.GameRoomsDto {
+	return dtos.GameRoomsDto{}
+}
+
 func (gc *GameService) CreateGameRoom(roomName string) (*string, error) {
 	rdsClient := client.RdsClient
 	ctx := context.Background()
 	roomID := strings.ReplaceAll(uuid.New().String(), "-", "")
 
+	// Redis에 roomID 저장
 	err := rdsClient.Set(ctx, roomID, roomName)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to set room in redis: %v", err)
 	}
 
+	// 게임방을 Sorted Set에 타임스탬프와 함께 추가
+	timestamp := float64(time.Now().Unix()) // 현재 시간을 스코어로 사용
+	err = rdsClient.ZAdd(ctx, "game_rooms", &redis.Z{
+		Score:  timestamp,
+		Member: roomID,
+	}).Err()
+	if err != nil {
+		return nil, fmt.Errorf("failed to add room to sorted set: %v", err)
+	}
+
+	// In-memory에 게임방 정보 추가
 	room := newGameRoom()
-
 	mu.Lock()
-	if _, exists := gameRooms[roomID]; exists {
-		mu.Unlock()
-		return nil, fmt.Errorf("room with ID %s already exists", roomID)
-	}
 	gameRooms[roomID] = room
 	mu.Unlock()
 
+	// 게임방 실행
 	go room.run()
 
 	return &roomID, nil

@@ -70,3 +70,7 @@ func (gc *GameController) HandleJoinGameRoom(c *gin.Context) {
 		Ok:      true,
 	})
 }
+
+func (gc *GameController) HandleGetGameRooms(c *gin.Context) {
+	// TODO: implement fetching all the game rooms from redis
+}

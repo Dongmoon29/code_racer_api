@@ -68,6 +68,7 @@ func (app *App) setGameRoutes(rg *gin.RouterGroup) {
 
 	gg := rg.Group("/games")
 	{
+		gg.GET("", gc.HandleGetGameRooms)
 		gg.POST("", gc.HandleCreateGameRoom)
 		gg.GET("/:id", gc.HandleJoinGameRoom)
 	}
