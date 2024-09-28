@@ -7,12 +7,10 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
 	"github.com/Dongmoon29/code_racer_api/internal/util/client"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
@@ -103,12 +101,6 @@ func (gc *GameService) CreateGameRoom(roomName string) (*string, error) {
 		return nil, fmt.Errorf("failed to set room in redis: %v", err)
 	}
 
-	// 게임방을 Sorted Set에 타임스탬프와 함께 추가
-	timestamp := float64(time.Now().Unix()) // 현재 시간을 스코어로 사용
-	err = rdsClient.ZAdd(ctx, "game_rooms", &redis.Z{
-		Score:  timestamp,
-		Member: roomID,
-	}).Err()
 	if err != nil {
 		return nil, fmt.Errorf("failed to add room to sorted set: %v", err)
 	}

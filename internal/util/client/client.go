@@ -23,6 +23,7 @@ type RedisClientInterface interface {
 	Set(ctx context.Context, key string, value interface{}) error
 	Get(ctx context.Context, key string) (string, error)
 	Incr(ctx context.Context, key string)
+	ZAdd(ctx context.Context, key string, z redis.Z)
 }
 
 type RedisClient struct {

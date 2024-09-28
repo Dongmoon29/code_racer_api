@@ -45,3 +45,14 @@ type GameRoomsDto struct {
 	Id       string `json:"id"`
 	RoomName string `json:"room_name"`
 }
+
+type SigninRequestDto struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type SignupRequestDto struct {
+	Name     string `json:"name" validate:"required,min=3,max=32"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password"`
+}

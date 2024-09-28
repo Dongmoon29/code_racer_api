@@ -6,8 +6,10 @@ import (
 	"os"
 
 	"github.com/Dongmoon29/code_racer_api/db"
+	authController "github.com/Dongmoon29/code_racer_api/internal/controllers/auth"
 	gameController "github.com/Dongmoon29/code_racer_api/internal/controllers/game"
 	judge0Controller "github.com/Dongmoon29/code_racer_api/internal/controllers/judge0"
+	authService "github.com/Dongmoon29/code_racer_api/internal/services/auth"
 	gameService "github.com/Dongmoon29/code_racer_api/internal/services/game"
 	judge0Service "github.com/Dongmoon29/code_racer_api/internal/services/judge0"
 	"github.com/gin-contrib/cors"
@@ -48,17 +50,29 @@ func (app *App) setRoutes() *gin.Engine {
 
 	app.setJudge0Routes(apiGroup)
 	app.setGameRoutes(apiGroup)
+	app.setUserRoutes(apiGroup)
+
 	return r
+}
+func (app *App) setUserRoutes(rg *gin.RouterGroup) {
+	us := authService.NewAuthService(app.db)
+	uc := authController.NewAuthController(us)
+
+	cg := rg.Group("/user")
+	{
+		cg.POST("/signin", uc.HandleSignin)
+		cg.POST("/signup", uc.HandleSignup)
+	}
 }
 
 func (app *App) setJudge0Routes(rg *gin.RouterGroup) {
 	js := judge0Service.NewJudge0Service()
 	jc := judge0Controller.NewJudge0Controller(js)
 
-	cg := rg.Group("/code")
+	jg := rg.Group("/code")
 	{
-		cg.GET("/about", jc.GetAbout)
-		cg.POST("/submit", jc.HandleCreateCodeSubmission)
+		jg.GET("/about", jc.GetAbout)
+		jg.POST("/submit", jc.HandleCreateCodeSubmission)
 	}
 }
 
