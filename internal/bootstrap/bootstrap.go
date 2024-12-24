@@ -32,7 +32,7 @@ import (
 
 type Application struct {
 	Repository   repositories.Repository
-	CacheStorage cache.Storage
+	CacheStorage cache.RedisStorage
 	Config       *config.Config
 	Logger       *zap.SugaredLogger
 }
@@ -43,10 +43,10 @@ func (app *Application) Mount() *gin.Engine {
 	// webHost := env.GetString("CODERACER_WEB", "localhost:3000")
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		// AllowOrigins:     []string{webHost},
-		AllowOrigins:     []string{"*"},
+		// AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"DELETE", "POST", "GET", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
@@ -102,13 +102,15 @@ func (app *Application) Run(router *gin.Engine) error {
 }
 
 func (app *Application) setUserRoutes(rg *gin.RouterGroup) {
-	us := authService.NewAuthService(app.Repository.UserRepository, app.Repository.RoleRepository)
+	us := authService.NewAuthService(app.Repository.UserRepository, app.Repository.RoleRepository, app.CacheStorage.Users)
 	uc := authController.NewAuthController(us)
 
 	cg := rg.Group("/users")
 	{
 		cg.POST("/signin", uc.HandleSignin)
 		cg.POST("/signup", uc.HandleSignup)
+		cg.POST("/logout", app.AuthMiddleware(), uc.HandleLogout)
+		cg.GET("/profile", app.AuthMiddleware(), uc.HandleUserProfile)
 	}
 }
 
@@ -161,11 +163,23 @@ func (app *Application) GetUser(ctx context.Context, userID int64) (*models.User
 	return user, nil
 }
 
+type StoredUser struct {
+	ID        int
+	Username  string
+	Email     string
+	RoleID    int
+	IsActive  bool
+	CreatedAt time.Time
+}
+
 func (app *Application) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Authorization 헤더 확인
 		authHeader := c.GetHeader("Authorization")
+		fmt.Printf("authHeader %s\n", authHeader)
+
 		if authHeader == "" {
+			fmt.Printf("inside of authHeader == \"\" ")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "authorization header is missing",
 			})
@@ -211,7 +225,8 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		// 사용자 ID 추출
-		userID, err := strconv.ParseInt(fmt.Sprintf("%.f", claims["sub"]), 10, 64)
+		fmt.Printf("claims[user_id]=> %s\n", claims["user_id"])
+		userID, err := strconv.ParseInt(claims["user_id"].(string), 10, 64) // 문자열을 int64로 변환
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "invalid user ID in token",
@@ -226,7 +241,6 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 			})
 			return
 		}
-		// 사용자 정보를 컨텍스트에 저장
 		c.Set(string("user"), user)
 
 		c.Next()

@@ -13,6 +13,7 @@ import (
 )
 
 func AuthMiddleware(getUser func(context.Context, int64) (*models.User, error)) gin.HandlerFunc {
+	fmt.Println("AuthMiddleware called")
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories"
+	"github.com/Dongmoon29/code_racer_api/internal/repositories/cache"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
 	utils "github.com/Dongmoon29/code_racer_api/internal/utils/auth"
 	"gorm.io/gorm"
@@ -20,15 +21,17 @@ var (
 )
 
 type AuthService struct {
-	userRepository repositories.UserRepository
-	roleRepository repositories.RoleRepository
+	userRepository repositories.UserRepositoryInterface
+	roleRepository repositories.RoleRepositoryInterface
+	userStore      cache.UsersRedisStoreInterface
 }
 
-func NewAuthService(ur repositories.UserRepository, rr repositories.RoleRepository) AuthService {
+func NewAuthService(ur repositories.UserRepositoryInterface, rr repositories.RoleRepositoryInterface, us cache.UsersRedisStoreInterface) AuthService {
 	once.Do(func() {
 		instance = AuthService{
 			userRepository: ur,
 			roleRepository: rr,
+			userStore:      us,
 		}
 	})
 	return instance
@@ -37,6 +40,21 @@ func NewAuthService(ur repositories.UserRepository, rr repositories.RoleReposito
 type Claims struct {
 	UserID         string
 	ExpirationTime time.Time
+}
+
+func (us *AuthService) GetUserByID(ctx context.Context, userID int64) (*models.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	user, err := us.userRepository.GetByID(ctx, userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("user not found with ID: %d", userID)
+		}
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (us *AuthService) FindAndVerifyUserByEmail(dto dtos.SigninRequestDto) (*models.User, error) {
@@ -87,4 +105,16 @@ func (us *AuthService) CreateUser(dto dtos.SignupRequestDto) (*models.User, erro
 	}
 
 	return createdUser, nil
+}
+
+func (us *AuthService) DeleteSession(ctx context.Context, userID int) {
+	us.userStore.Delete(ctx, userID)
+}
+
+func (us *AuthService) SaveSession(ctx context.Context, user *models.User) error {
+	err := us.userStore.Set(ctx, user)
+	if err != nil {
+		return fmt.Errorf("failed to save session: %w", err)
+	}
+	return nil
 }

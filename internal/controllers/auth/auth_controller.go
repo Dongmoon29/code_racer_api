@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
+	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
 	"github.com/Dongmoon29/code_racer_api/internal/services/auth"
 	utils "github.com/Dongmoon29/code_racer_api/internal/utils/auth"
 	"github.com/gin-gonic/gin"
@@ -46,6 +47,35 @@ func (uc *AuthController) HandleSignup(c *gin.Context) {
 
 }
 
+func (uc *AuthController) HandleLogout(c *gin.Context) {
+	userData, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	userMap, ok := userData.(*models.User)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user data"})
+		return
+	}
+
+	userID := userMap.ID
+	uc.AuthService.DeleteSession(c.Request.Context(), int(userID))
+
+	c.JSON(http.StatusOK, gin.H{"message": "logout successful"})
+}
+
+func (uc *AuthController) HandleUserProfile(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"user": user})
+}
+
 func (uc *AuthController) HandleSignin(c *gin.Context) {
 	var signinRequestDto dtos.SigninRequestDto
 
@@ -64,6 +94,14 @@ func (uc *AuthController) HandleSignin(c *gin.Context) {
 	if err != nil {
 		fmt.Printf("error ===> %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	// Redis에 세션 저장
+	// need to investigate more (여러 군데서 로그인하는 경우에는 세션을 어케 처리해야댐?)
+	err = uc.AuthService.SaveSession(c.Request.Context(), user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
 		return
 	}
 

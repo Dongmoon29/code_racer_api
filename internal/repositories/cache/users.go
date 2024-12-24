@@ -10,13 +10,13 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type UserStore struct {
+type UserRedisImpl struct {
 	rdb *redis.Client
 }
 
 const UserExpTime = time.Hour
 
-func (s *UserStore) Get(ctx context.Context, userID int64) (*models.User, error) {
+func (s *UserRedisImpl) Get(ctx context.Context, userID int64) (*models.User, error) {
 	cacheKey := fmt.Sprintf("user-%d", userID)
 
 	data, err := s.rdb.Get(ctx, cacheKey).Result()
@@ -37,7 +37,7 @@ func (s *UserStore) Get(ctx context.Context, userID int64) (*models.User, error)
 	return &user, nil
 }
 
-func (s *UserStore) Set(ctx context.Context, user *models.User) error {
+func (s *UserRedisImpl) Set(ctx context.Context, user *models.User) error {
 	cacheKey := fmt.Sprintf("user-%d", user.ID)
 
 	json, err := json.Marshal(user)
@@ -48,7 +48,17 @@ func (s *UserStore) Set(ctx context.Context, user *models.User) error {
 	return s.rdb.SetEX(ctx, cacheKey, json, UserExpTime).Err()
 }
 
-func (s *UserStore) Delete(ctx context.Context, userID int64) {
+func (s *UserRedisImpl) Delete(ctx context.Context, userID int) error {
+	// Redis 키 생성
 	cacheKey := fmt.Sprintf("user-%d", userID)
-	s.rdb.Del(ctx, cacheKey)
+
+	// Redis 키 삭제
+	err := s.rdb.Del(ctx, cacheKey).Err()
+	if err != nil {
+		// 에러 처리
+		return fmt.Errorf("failed to delete cache for user %d: %w", userID, err)
+	}
+
+	// 성공 시 nil 반환
+	return nil
 }

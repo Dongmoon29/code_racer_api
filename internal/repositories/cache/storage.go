@@ -7,18 +7,18 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type Users interface {
+type UsersRedisStoreInterface interface {
 	Get(context.Context, int64) (*models.User, error)
 	Set(context.Context, *models.User) error
-	Delete(context.Context, int64)
+	Delete(context.Context, int) error
 }
 
-type Storage struct {
-	Users Users
+type RedisStorage struct {
+	Users UsersRedisStoreInterface
 }
 
-func NewRedisStorage(rbd *redis.Client) Storage {
-	return Storage{
-		Users: &UserStore{rdb: rbd},
+func NewRedisStorage(rbd *redis.Client) RedisStorage {
+	return RedisStorage{
+		Users: &UserRedisImpl{rdb: rbd},
 	}
 }

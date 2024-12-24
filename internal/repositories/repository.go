@@ -16,11 +16,11 @@ var (
 )
 
 type Repository struct {
-	UserRepository UserRepository
-	RoleRepository RoleRepository
+	UserRepository UserRepositoryInterface
+	RoleRepository RoleRepositoryInterface
 }
 
-type UserRepository interface {
+type UserRepositoryInterface interface {
 	GetByID(context.Context, int64) (*models.User, error)
 	GetByEmail(context.Context, string) (*models.User, error)
 	Create(context.Context, *models.User) (*models.User, error)
@@ -28,7 +28,7 @@ type UserRepository interface {
 	Delete(context.Context, int64) error
 }
 
-type RoleRepository interface {
+type RoleRepositoryInterface interface {
 	GetByName(context.Context, string) (*models.Role, error)
 }
 

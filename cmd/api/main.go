@@ -32,7 +32,7 @@ func main() {
 		},
 		RedisConfig: config.RedisConfig{
 			Addr:     env.GetString("REDIS_ADDR", "localhost:6379"),
-			Enabled:  env.GetBool("REDIS_ENABLED", false),
+			Enabled:  env.GetBool("REDIS_ENABLED", true),
 			Password: env.GetString("REDIS_PASSWORD", ""),
 			Db:       env.GetInt("REDIS_DB", 0),
 		},
@@ -65,6 +65,7 @@ func main() {
 
 		defer rdb.Close()
 	}
+	// TODO: need to figure out how to handle redis logic when RedisEnabled false
 
 	cacheStorage := cache.NewRedisStorage(rdb)
 
