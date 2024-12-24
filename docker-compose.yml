@@ -1,21 +1,48 @@
+version: '3.8'
+
 services:
   db:
-    image: postgres
+    image: postgres:16.3
+    container_name: postgres-db
     environment:
+      POSTGRES_DB: code_racer_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: example
-      POSTGRES_DB: mydb
+      POSTGRES_PASSWORD: password1234
+    networks:
+      - backend
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     ports:
       - '5432:5432'
-    container_name: postgres
 
   redis:
-    image: redis:alpine
+    image: redis:6.2-alpine
+    restart: unless-stopped
+    container_name: redis
     ports:
       - '6379:6379'
-    container_name: redis
+    command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - backend
+
+  redis-commander:
+    container_name: redis-commander
+    hostname: redis-commander
+    image: rediscommander/redis-commander:latest
+    platform: linux/amd64 # ARM 환경에서 실행 가능하도록 플랫폼 지정
+    environment:
+      - REDIS_HOSTS=local:redis:6379 # redis 서버 주소 및 포트 설정
+    ports:
+      - '127.0.0.1:8081:8081'
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - backend
 
 volumes:
-  postgres_data:
+  db-data:
+
+networks:
+  backend:
+    driver: bridge

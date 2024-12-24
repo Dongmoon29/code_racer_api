@@ -8,7 +8,7 @@ import (
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
 	"github.com/Dongmoon29/code_racer_api/internal/services/judge0"
-	"github.com/Dongmoon29/code_racer_api/internal/util/client"
+	"github.com/Dongmoon29/code_racer_api/internal/utils/client"
 	"github.com/gin-gonic/gin"
 )
 

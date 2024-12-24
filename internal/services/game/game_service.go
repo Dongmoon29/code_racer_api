@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
-	"github.com/Dongmoon29/code_racer_api/internal/util/client"
+	"github.com/Dongmoon29/code_racer_api/internal/utils/client"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -24,7 +24,6 @@ func NewGameService() GameService {
 
 var mu sync.Mutex
 
-// WebSocket 업그레이더
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -101,10 +100,6 @@ func (gc *GameService) CreateGameRoom(roomName string) (*string, error) {
 		return nil, fmt.Errorf("failed to set room in redis: %v", err)
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to add room to sorted set: %v", err)
-	}
-
 	// In-memory에 게임방 정보 추가
 	room := newGameRoom()
 	mu.Lock()
@@ -120,6 +115,8 @@ func (gc *GameService) CreateGameRoom(roomName string) (*string, error) {
 func (gc *GameService) JoinGameRoom(c *gin.Context, roomID string) error {
 	rdsClient := client.RdsClient
 	ctx := context.Background()
+
+	log.Printf("roomID : %s", roomID)
 
 	// Redis에서 게임방 존재 여부 확인
 	roomName, err := rdsClient.Get(ctx, roomID)

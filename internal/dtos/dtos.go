@@ -1,5 +1,9 @@
 package dtos
 
+import (
+	"time"
+)
+
 type CodeSubmissionRequest struct {
 	SourceCode     string `json:"source_code"`
 	LanguageID     int    `json:"language_id"`
@@ -51,8 +55,21 @@ type SigninRequestDto struct {
 	Password string `json:"password"`
 }
 
+type SigninResponseDto struct {
+	user  UserResponseDto
+	token string
+}
+
+type UserResponseDto struct {
+	ID        uint      `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	RoleID    uint      `json:"role_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type SignupRequestDto struct {
-	Name     string `json:"name" validate:"required,min=3,max=32"`
+	Username string `json:"user_name" validate:"required,min=3,max=32"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password"`
 }

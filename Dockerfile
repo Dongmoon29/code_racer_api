@@ -17,7 +17,7 @@ COPY . .
 WORKDIR /app/cmd/api
 
 # Build the Go app and place the binary in /app
-RUN go build -o /app/main .
+RUN go build -o /app/bin/main .
 
 # Stage 2: Run the binary
 FROM alpine:latest
@@ -25,7 +25,7 @@ FROM alpine:latest
 WORKDIR /app
 
 # Copy the binary from the build stage
-COPY --from=builder /app/main .
+COPY --from=builder /app/bin/main ./bin/
 
 # Command to run the executable
 CMD ["./main"]

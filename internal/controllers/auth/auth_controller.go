@@ -1,11 +1,13 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
 	"github.com/Dongmoon29/code_racer_api/internal/services/auth"
+	utils "github.com/Dongmoon29/code_racer_api/internal/utils/auth"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,13 +32,12 @@ func NewAuthController(authService auth.AuthService) *AuthController {
 func (uc *AuthController) HandleSignup(c *gin.Context) {
 	var dto dtos.SignupRequestDto
 
-	// Handle request
 	if err := c.ShouldBindJSON(&dto); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	user, err := uc.AuthService.UserSignup(dto)
+	user, err := uc.AuthService.CreateUser(dto)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error signup"})
 		return
@@ -48,19 +49,31 @@ func (uc *AuthController) HandleSignup(c *gin.Context) {
 func (uc *AuthController) HandleSignin(c *gin.Context) {
 	var signinRequestDto dtos.SigninRequestDto
 
-	// 1. 요청 바디에서 SigninRequestDto에 데이터 바인딩
 	if err := c.ShouldBindJSON(&signinRequestDto); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	// 2. AuthService를 이용해 로그인 처리
-	user, err := uc.AuthService.UserSignin(signinRequestDto)
+	user, err := uc.AuthService.FindAndVerifyUserByEmail(signinRequestDto)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 3. 성공적으로 로그인하면 JWT 토큰 반환
-	c.JSON(http.StatusOK, gin.H{"ok": true, "user": user})
+	token, err := utils.GenerateJWT(fmt.Sprint(user.ID))
+	if err != nil {
+		fmt.Printf("error ===> %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	userResponse := dtos.UserResponseDto{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		RoleID:    user.RoleID,
+		CreatedAt: user.CreatedAt,
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true, "user": userResponse, "token": token})
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
-	"github.com/Dongmoon29/code_racer_api/internal/util/client"
+	"github.com/Dongmoon29/code_racer_api/internal/utils/client"
 )
 
 type Judge0Service struct {
