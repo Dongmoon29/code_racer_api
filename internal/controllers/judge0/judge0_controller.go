@@ -10,10 +10,12 @@ import (
 	"github.com/Dongmoon29/code_racer_api/internal/services/judge0"
 	"github.com/Dongmoon29/code_racer_api/internal/utils/client"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type Judge0Controller struct {
 	Judge0Service judge0.Judge0Service
+	logger        *zap.SugaredLogger
 }
 
 var (
@@ -21,10 +23,11 @@ var (
 	once     sync.Once
 )
 
-func NewJudge0Controller(judge0Service judge0.Judge0Service) *Judge0Controller {
+func NewJudge0Controller(judge0Service judge0.Judge0Service, logger *zap.SugaredLogger) *Judge0Controller {
 	once.Do(func() {
 		instance = &Judge0Controller{
 			Judge0Service: judge0Service,
+			logger:        logger,
 		}
 	})
 	return instance

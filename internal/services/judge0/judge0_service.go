@@ -7,6 +7,7 @@ import (
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
 	"github.com/Dongmoon29/code_racer_api/internal/utils/client"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,11 +16,14 @@ var (
 )
 
 type Judge0Service struct {
+	logger *zap.SugaredLogger
 }
 
-func NewJudge0Service() Judge0Service {
+func NewJudge0Service(logger *zap.SugaredLogger) Judge0Service {
 	once.Do(func() {
-		instance = Judge0Service{}
+		instance = Judge0Service{
+			logger: logger,
+		}
 	})
 	return instance
 }

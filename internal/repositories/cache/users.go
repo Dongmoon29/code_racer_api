@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
+	"github.com/Dongmoon29/code_racer_api/internal/mapper"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -16,7 +16,7 @@ type UserRedisImpl struct {
 
 const UserExpTime = time.Hour
 
-func (s *UserRedisImpl) Get(ctx context.Context, userID int64) (*models.User, error) {
+func (s *UserRedisImpl) Get(ctx context.Context, userID int) (*mapper.MappedUser, error) {
 	cacheKey := fmt.Sprintf("user-%d", userID)
 
 	data, err := s.rdb.Get(ctx, cacheKey).Result()
@@ -26,7 +26,7 @@ func (s *UserRedisImpl) Get(ctx context.Context, userID int64) (*models.User, er
 		return nil, err
 	}
 
-	var user models.User
+	var user mapper.MappedUser
 	if data != "" {
 		err := json.Unmarshal([]byte(data), &user)
 		if err != nil {
@@ -37,7 +37,7 @@ func (s *UserRedisImpl) Get(ctx context.Context, userID int64) (*models.User, er
 	return &user, nil
 }
 
-func (s *UserRedisImpl) Set(ctx context.Context, user *models.User) error {
+func (s *UserRedisImpl) Set(ctx context.Context, user *mapper.MappedUser) error {
 	cacheKey := fmt.Sprintf("user-%d", user.ID)
 
 	json, err := json.Marshal(user)

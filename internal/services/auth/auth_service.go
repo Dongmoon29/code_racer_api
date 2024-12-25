@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
+	"github.com/Dongmoon29/code_racer_api/internal/mapper"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories/cache"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
 	utils "github.com/Dongmoon29/code_racer_api/internal/utils/auth"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -24,14 +26,16 @@ type AuthService struct {
 	userRepository repositories.UserRepositoryInterface
 	roleRepository repositories.RoleRepositoryInterface
 	userStore      cache.UsersRedisStoreInterface
+	logger         *zap.SugaredLogger
 }
 
-func NewAuthService(ur repositories.UserRepositoryInterface, rr repositories.RoleRepositoryInterface, us cache.UsersRedisStoreInterface) AuthService {
+func NewAuthService(ur repositories.UserRepositoryInterface, rr repositories.RoleRepositoryInterface, us cache.UsersRedisStoreInterface, logger *zap.SugaredLogger) AuthService {
 	once.Do(func() {
 		instance = AuthService{
 			userRepository: ur,
 			roleRepository: rr,
 			userStore:      us,
+			logger:         logger,
 		}
 	})
 	return instance
@@ -42,7 +46,7 @@ type Claims struct {
 	ExpirationTime time.Time
 }
 
-func (us *AuthService) GetUserByID(ctx context.Context, userID int64) (*models.User, error) {
+func (us *AuthService) GetUserByID(ctx context.Context, userID int) (*mapper.MappedUser, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -54,10 +58,12 @@ func (us *AuthService) GetUserByID(ctx context.Context, userID int64) (*models.U
 		return nil, err
 	}
 
-	return user, nil
+	mappedUser := mapper.UserMapper(user)
+
+	return mappedUser, nil
 }
 
-func (us *AuthService) FindAndVerifyUserByEmail(dto dtos.SigninRequestDto) (*models.User, error) {
+func (us *AuthService) FindAndVerifyUserByEmail(dto dtos.SigninRequestDto) (*mapper.MappedUser, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	user, err := us.userRepository.GetByEmail(ctx, dto.Email)
@@ -71,10 +77,12 @@ func (us *AuthService) FindAndVerifyUserByEmail(dto dtos.SigninRequestDto) (*mod
 		return nil, fmt.Errorf("invalid password")
 	}
 
-	return user, nil
+	mappedUser := mapper.UserMapper(user)
+
+	return mappedUser, nil
 }
 
-func (us *AuthService) CreateUser(dto dtos.SignupRequestDto) (*models.User, error) {
+func (us *AuthService) CreateUser(dto dtos.SignupRequestDto) (*mapper.MappedUser, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	hashedPassword, err := utils.HashPassword(dto.Password)
@@ -104,14 +112,16 @@ func (us *AuthService) CreateUser(dto dtos.SignupRequestDto) (*models.User, erro
 		return nil, err
 	}
 
-	return createdUser, nil
+	mappedUser := mapper.UserMapper(createdUser)
+
+	return mappedUser, nil
 }
 
 func (us *AuthService) DeleteSession(ctx context.Context, userID int) {
 	us.userStore.Delete(ctx, userID)
 }
 
-func (us *AuthService) SaveSession(ctx context.Context, user *models.User) error {
+func (us *AuthService) SaveSession(ctx context.Context, user *mapper.MappedUser) error {
 	err := us.userStore.Set(ctx, user)
 	if err != nil {
 		return fmt.Errorf("failed to save session: %w", err)

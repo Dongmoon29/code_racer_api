@@ -21,7 +21,7 @@ type Repository struct {
 }
 
 type UserRepositoryInterface interface {
-	GetByID(context.Context, int64) (*models.User, error)
+	GetByID(context.Context, int) (*models.User, error)
 	GetByEmail(context.Context, string) (*models.User, error)
 	Create(context.Context, *models.User) (*models.User, error)
 	Activate(context.Context, string) error

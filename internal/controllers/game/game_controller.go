@@ -9,10 +9,12 @@ import (
 	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
 	"github.com/Dongmoon29/code_racer_api/internal/services/game"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type GameController struct {
 	GameService game.GameService
+	logger      *zap.SugaredLogger
 }
 
 var (
@@ -20,10 +22,11 @@ var (
 	once     sync.Once
 )
 
-func NewGameController(gameService game.GameService) *GameController {
+func NewGameController(gameService game.GameService, logger *zap.SugaredLogger) *GameController {
 	once.Do(func() {
 		instance = &GameController{
 			GameService: gameService,
+			logger:      logger,
 		}
 	})
 	return instance
@@ -86,7 +89,6 @@ func (gc *GameController) HandleJoinGameRoom(c *gin.Context) {
 }
 
 func (gc *GameController) HandleGetGameRooms(c *gin.Context) {
-	// Redis에서 키 조회
 	keys, err := gc.GameService.GetAllGameRooms()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get game rooms"})

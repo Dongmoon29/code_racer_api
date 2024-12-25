@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 var (
@@ -24,12 +25,14 @@ var gameRooms sync.Map
 
 type GameService struct {
 	gameStore cache.GameRedisStoreInterface
+	logger    *zap.SugaredLogger
 }
 
-func NewGameService(gameStore cache.GameRedisStoreInterface) GameService {
+func NewGameService(gameStore cache.GameRedisStoreInterface, logger *zap.SugaredLogger) GameService {
 	once.Do(func() {
 		instance = GameService{
 			gameStore: gameStore,
+			logger:    logger,
 		}
 	})
 	return instance
@@ -139,14 +142,13 @@ func (gs *GameService) CreateGameRoom(roomName string, user *models.User) (*stri
 func (gc *GameService) JoinGameRoom(c *gin.Context, roomID string) error {
 	ctx := context.Background()
 
-	// Redis에서 게임방 존재 여부 확인
 	roomName, err := gc.gameStore.Get(ctx, roomID)
 	if err != nil || roomName == nil {
 		return fmt.Errorf("cannot find a room with id in redis: %s", roomID)
 	}
 
-	// In-memory에 있는 게임방 확인
-	room, ok := gameRooms.Load(fmt.Sprintf("game-%s", roomID))
+	// room, ok := gameRooms.Load(fmt.Sprintf("game-%s", roomID))
+	room, ok := gameRooms.Load(roomID)
 	if !ok {
 		return fmt.Errorf("cannot find a room with id in in memory: %s", roomID)
 	}
@@ -156,27 +158,23 @@ func (gc *GameService) JoinGameRoom(c *gin.Context, roomID string) error {
 		return fmt.Errorf("invalid room type")
 	}
 
-	// WebSocket 업그레이드
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return fmt.Errorf("failed to upgrade WebSocket with roomID: %s", roomID)
 	}
 
-	// 새로운 클라이언트 생성 및 방에 등록
 	client := &WebsocketClient{
 		conn: conn,
 		send: make(chan []byte),
 	}
 	gameRoom.register <- client
 
-	// 클라이언트의 메시지 읽기 및 쓰기 루프 시작
 	go client.readPump(gameRoom)
 	go client.writePump()
 
 	return nil
 }
 
-// 메세지를 받아서 뿌려주는 함수
 func (c *WebsocketClient) readPump(room *GameRoom) {
 	defer func() {
 		log.Println("close connection")
@@ -186,6 +184,7 @@ func (c *WebsocketClient) readPump(room *GameRoom) {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
+			fmt.Printf("error happen %v\n", err.Error())
 			break
 		}
 		room.broadcast <- message

@@ -3,13 +3,14 @@ package cache
 import (
 	"context"
 
+	"github.com/Dongmoon29/code_racer_api/internal/mapper"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
 	"github.com/go-redis/redis/v8"
 )
 
 type UsersRedisStoreInterface interface {
-	Get(context.Context, int64) (*models.User, error)
-	Set(context.Context, *models.User) error
+	Get(context.Context, int) (*mapper.MappedUser, error)
+	Set(context.Context, *mapper.MappedUser) error
 	Delete(context.Context, int) error
 }
 

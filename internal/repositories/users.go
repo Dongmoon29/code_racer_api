@@ -12,12 +12,13 @@ type UserRepositoryImpl struct {
 	DB *gorm.DB
 }
 
-func (s *UserRepositoryImpl) GetByID(ctx context.Context, id int64) (*models.User, error) {
+func (s *UserRepositoryImpl) GetByID(ctx context.Context, id int) (*models.User, error) {
 	var user models.User
 	err := s.DB.WithContext(ctx).First(&user, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors.New("user not found")
 	}
+
 	return &user, err
 }
 
@@ -27,6 +28,7 @@ func (s *UserRepositoryImpl) GetByEmail(ctx context.Context, email string) (*mod
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors.New("user not found")
 	}
+
 	return &user, err
 }
 
@@ -37,6 +39,7 @@ func (s *UserRepositoryImpl) Create(ctx context.Context, user *models.User) (*mo
 		}
 		return nil, err
 	}
+
 	return user, nil
 }
 
