@@ -3,16 +3,25 @@ package judge0
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
 	"github.com/Dongmoon29/code_racer_api/internal/utils/client"
+)
+
+var (
+	instance Judge0Service
+	once     sync.Once
 )
 
 type Judge0Service struct {
 }
 
 func NewJudge0Service() Judge0Service {
-	return Judge0Service{}
+	once.Do(func() {
+		instance = Judge0Service{}
+	})
+	return instance
 }
 
 func (js *Judge0Service) CreateCodeSubmission(dto dtos.CodeSubmissionRequest) (map[string]interface{}, error) {

@@ -1,10 +1,12 @@
 package game
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
+	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
 	"github.com/Dongmoon29/code_racer_api/internal/services/game"
 	"github.com/gin-gonic/gin"
 )
@@ -29,14 +31,26 @@ func NewGameController(gameService game.GameService) *GameController {
 
 func (gc *GameController) HandleCreateGameRoom(c *gin.Context) {
 	var createGameRoomDto dtos.CreateGameRoomDto
+	user, exist := c.Get("user")
+	if !exist {
+		fmt.Println("Create game roome failed, user not exist")
+	}
+
 	if err := c.ShouldBindJSON(&createGameRoomDto); err != nil {
-		c.JSON(http.StatusInternalServerError, dtos.CreateGameRoomResponseDto{
-			Message: "internal server error",
+		c.JSON(http.StatusBadRequest, dtos.CreateGameRoomResponseDto{
+			Message: "dto error",
 			Ok:      false,
 		})
 		return
 	}
-	roomID, err := gc.GameService.CreateGameRoom(createGameRoomDto.RoomName)
+	convertedUser, ok := user.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, dtos.CreateGameRoomResponseDto{
+			Message: "failed to create room convert error",
+			Ok:      false,
+		})
+	}
+	roomID, err := gc.GameService.CreateGameRoom(createGameRoomDto.RoomName, convertedUser)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dtos.CreateGameRoomResponseDto{
@@ -72,5 +86,12 @@ func (gc *GameController) HandleJoinGameRoom(c *gin.Context) {
 }
 
 func (gc *GameController) HandleGetGameRooms(c *gin.Context) {
-	// TODO: implement fetching all the game rooms from redis
+	// Redis에서 키 조회
+	keys, err := gc.GameService.GetAllGameRooms()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get game rooms"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"rooms": keys})
 }

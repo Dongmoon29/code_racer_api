@@ -66,7 +66,6 @@ func main() {
 		defer rdb.Close()
 	}
 	// TODO: need to figure out how to handle redis logic when RedisEnabled false
-
 	cacheStorage := cache.NewRedisStorage(rdb)
 
 	app := &bootstrap.Application{

@@ -5,21 +5,34 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"sync"
+	"time"
 
-	"github.com/Dongmoon29/code_racer_api/internal/dtos"
-	"github.com/Dongmoon29/code_racer_api/internal/utils/client"
+	"github.com/Dongmoon29/code_racer_api/internal/repositories/cache"
+	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
+var (
+	instance GameService
+	once     sync.Once
+)
+
+var gameRooms sync.Map
+
 type GameService struct {
+	gameStore cache.GameRedisStoreInterface
 }
 
-func NewGameService() GameService {
-	return GameService{}
+func NewGameService(gameStore cache.GameRedisStoreInterface) GameService {
+	once.Do(func() {
+		instance = GameService{
+			gameStore: gameStore,
+		}
+	})
+	return instance
 }
 
 var mu sync.Mutex
@@ -28,28 +41,27 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true // 모든 도메인에서 접근 허용
+		return true
 	},
 }
 
-// 클라이언트 연결 구조체
 type WebsocketClient struct {
 	conn *websocket.Conn
 	send chan []byte
 }
 
-// 게임방 구조체
 type GameRoom struct {
+	id         string
 	clients    map[*WebsocketClient]bool
 	broadcast  chan []byte
 	register   chan *WebsocketClient
 	unregister chan *WebsocketClient
 }
 
-var gameRooms = make(map[string]*GameRoom)
-
 func newGameRoom() *GameRoom {
+	id := uuid.NewString()
 	return &GameRoom{
+		id:         id,
 		clients:    make(map[*WebsocketClient]bool),
 		broadcast:  make(chan []byte),
 		register:   make(chan *WebsocketClient),
@@ -57,6 +69,7 @@ func newGameRoom() *GameRoom {
 	}
 }
 
+// TODO
 func (room *GameRoom) run() {
 	for {
 		select {
@@ -85,49 +98,62 @@ func (room *GameRoom) run() {
 	}
 }
 
-func (gc *GameService) GetGameRooms() dtos.GameRoomsDto {
-	return dtos.GameRoomsDto{}
-}
-
-func (gc *GameService) CreateGameRoom(roomName string) (*string, error) {
-	rdsClient := client.RdsClient
+func (gs *GameService) GetAllGameRooms() ([]models.GameState, error) {
 	ctx := context.Background()
-	roomID := strings.ReplaceAll(uuid.New().String(), "-", "")
-
-	// Redis에 roomID 저장
-	err := rdsClient.Set(ctx, roomID, roomName)
+	gameRooms, err := gs.gameStore.GetAll(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set room in redis: %v", err)
+		return nil, err
 	}
 
-	// In-memory에 게임방 정보 추가
-	room := newGameRoom()
-	mu.Lock()
-	gameRooms[roomID] = room
-	mu.Unlock()
+	return gameRooms, nil
+}
 
-	// 게임방 실행
+func (gs *GameService) CreateGameRoom(roomName string, user *models.User) (*string, error) {
+	gameID := uuid.NewString()
+
+	gameState := &models.GameState{
+		ID:        gameID,
+		RoomName:  roomName,
+		Status:    "waiting",
+		CreatedAt: time.Now(),
+		CreatedBy: user.Username,
+		UserID:    user.ID,
+	}
+
+	ctx := context.Background()
+	err := gs.gameStore.Set(ctx, gameState)
+	if err != nil {
+		log.Printf("Failed to save game state: %v", err)
+		return nil, fmt.Errorf("failed to save game state: %v", err)
+	}
+
+	room := newGameRoom()
+
+	gameRooms.Store(gameID, room)
+
 	go room.run()
 
-	return &roomID, nil
+	return &gameID, nil
 }
 
 func (gc *GameService) JoinGameRoom(c *gin.Context, roomID string) error {
-	rdsClient := client.RdsClient
 	ctx := context.Background()
 
-	log.Printf("roomID : %s", roomID)
-
 	// Redis에서 게임방 존재 여부 확인
-	roomName, err := rdsClient.Get(ctx, roomID)
+	roomName, err := gc.gameStore.Get(ctx, roomID)
 	if err != nil || roomName == nil {
 		return fmt.Errorf("cannot find a room with id in redis: %s", roomID)
 	}
 
 	// In-memory에 있는 게임방 확인
-	room, ok := gameRooms[roomID]
+	room, ok := gameRooms.Load(fmt.Sprintf("game-%s", roomID))
 	if !ok {
 		return fmt.Errorf("cannot find a room with id in in memory: %s", roomID)
+	}
+
+	gameRoom, ok := room.(*GameRoom)
+	if !ok {
+		return fmt.Errorf("invalid room type")
 	}
 
 	// WebSocket 업그레이드
@@ -141,10 +167,10 @@ func (gc *GameService) JoinGameRoom(c *gin.Context, roomID string) error {
 		conn: conn,
 		send: make(chan []byte),
 	}
-	room.register <- client
+	gameRoom.register <- client
 
 	// 클라이언트의 메시지 읽기 및 쓰기 루프 시작
-	go client.readPump(room)
+	go client.readPump(gameRoom)
 	go client.writePump()
 
 	return nil
@@ -178,3 +204,18 @@ func (c *WebsocketClient) writePump() {
 		c.conn.WriteMessage(websocket.TextMessage, message)
 	}
 }
+
+// func cleanupRooms() {
+// 	ticker := time.NewTicker(10 * time.Minute)
+// 	defer ticker.Stop()
+
+// 	for range ticker.C {
+// 		mu.Lock()
+// 		for id, room := range gameRooms {
+// 			if room.isExpired() {
+// 				delete(gameRooms, id)
+// 			}
+// 		}
+// 		mu.Unlock()
+// 	}
+// }

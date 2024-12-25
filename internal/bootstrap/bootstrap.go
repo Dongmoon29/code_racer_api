@@ -114,6 +114,19 @@ func (app *Application) setUserRoutes(rg *gin.RouterGroup) {
 	}
 }
 
+func (app *Application) setGameRoutes(rg *gin.RouterGroup) {
+	gs := gameService.NewGameService(app.CacheStorage.Games)
+	gc := gameController.NewGameController(gs)
+
+	gg := rg.Group("/games")
+	gg.Use(app.AuthMiddleware())
+	{
+		gg.GET("", gc.HandleGetGameRooms)
+		gg.POST("", gc.HandleCreateGameRoom)
+		gg.GET("/:id", gc.HandleJoinGameRoom)
+	}
+}
+
 func (app *Application) setJudge0Routes(rg *gin.RouterGroup) {
 	js := judge0Service.NewJudge0Service()
 	jc := judge0Controller.NewJudge0Controller(js)
@@ -123,19 +136,6 @@ func (app *Application) setJudge0Routes(rg *gin.RouterGroup) {
 	{
 		jg.GET("/about", jc.GetAbout)
 		jg.POST("/submit", jc.HandleCreateCodeSubmission)
-	}
-}
-
-func (app *Application) setGameRoutes(rg *gin.RouterGroup) {
-	gs := gameService.NewGameService()
-	gc := gameController.NewGameController(gs)
-
-	gg := rg.Group("/games")
-	gg.Use(app.AuthMiddleware())
-	{
-		gg.GET("", gc.HandleGetGameRooms)
-		gg.POST("", gc.HandleCreateGameRoom)
-		gg.GET("/:id", gc.HandleJoinGameRoom)
 	}
 }
 
@@ -174,7 +174,6 @@ type StoredUser struct {
 
 func (app *Application) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Authorization 헤더 확인
 		authHeader := c.GetHeader("Authorization")
 		fmt.Printf("authHeader %s\n", authHeader)
 
@@ -186,7 +185,6 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// 헤더 포맷 검증
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -195,7 +193,6 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// 토큰 추출 및 검증 (예제에서는 단순 토큰 처리)
 		token := parts[1]
 		if token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -204,10 +201,8 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// JWT 파싱 및 검증
 		tokenString := parts[1]
 		jwtToken, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// 예제에서는 HS256 시크릿 키 사용 (실제 환경에서는 안전한 저장 방법 필요)
 			return []byte("secret"), nil
 		})
 		if err != nil || !jwtToken.Valid {
@@ -216,7 +211,6 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 			})
 			return
 		}
-		// Claims 파싱
 		claims, ok := jwtToken.Claims.(jwt.MapClaims)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -224,16 +218,14 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 			})
 			return
 		}
-		// 사용자 ID 추출
 		fmt.Printf("claims[user_id]=> %s\n", claims["user_id"])
-		userID, err := strconv.ParseInt(claims["user_id"].(string), 10, 64) // 문자열을 int64로 변환
+		userID, err := strconv.ParseInt(claims["user_id"].(string), 10, 64)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "invalid user ID in token",
 			})
 			return
 		}
-		// 사용자 정보 로딩
 		user, err := app.GetUser(c.Request.Context(), userID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{

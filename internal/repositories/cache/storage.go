@@ -13,12 +13,21 @@ type UsersRedisStoreInterface interface {
 	Delete(context.Context, int) error
 }
 
+type GameRedisStoreInterface interface {
+	Get(context.Context, string) (*models.GameState, error)
+	GetAll(context.Context) ([]models.GameState, error)
+	Set(context.Context, *models.GameState) error
+	Delete(context.Context, int) error
+}
+
 type RedisStorage struct {
 	Users UsersRedisStoreInterface
+	Games GameRedisStoreInterface
 }
 
 func NewRedisStorage(rbd *redis.Client) RedisStorage {
 	return RedisStorage{
 		Users: &UserRedisImpl{rdb: rbd},
+		Games: &GameRedisImpl{rdb: rbd},
 	}
 }
