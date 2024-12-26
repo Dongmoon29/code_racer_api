@@ -1,6 +1,0 @@
-TODO
-
-Create room request => if room is already exist => return error => if room is not exist => store roomID in redis
-
-Join room request => if roomId is not exist in redis => error notFoundRoomError => if roomID is exist in redis => connect websocket
-
