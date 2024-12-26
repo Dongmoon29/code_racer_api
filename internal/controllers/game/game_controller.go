@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/Dongmoon29/code_racer_api/internal/dtos"
-	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
+	"github.com/Dongmoon29/code_racer_api/internal/mapper"
 	"github.com/Dongmoon29/code_racer_api/internal/services/game"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -34,6 +34,7 @@ func NewGameController(gameService game.GameService, logger *zap.SugaredLogger) 
 
 func (gc *GameController) HandleCreateGameRoom(c *gin.Context) {
 	var createGameRoomDto dtos.CreateGameRoomDto
+	gc.logger.Debugln("inside of HandleCreateGameRoom")
 	user, exist := c.Get("user")
 	if !exist {
 		fmt.Println("Create game roome failed, user not exist")
@@ -46,7 +47,7 @@ func (gc *GameController) HandleCreateGameRoom(c *gin.Context) {
 		})
 		return
 	}
-	convertedUser, ok := user.(*models.User)
+	convertedUser, ok := user.(*mapper.MappedUser)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, dtos.CreateGameRoomResponseDto{
 			Message: "failed to create room convert error",
@@ -71,21 +72,22 @@ func (gc *GameController) HandleCreateGameRoom(c *gin.Context) {
 }
 
 func (gc *GameController) HandleJoinGameRoom(c *gin.Context) {
+	gc.logger.Debugln("inside of HandleJoinGameRoom()")
 	roomID := c.Param("id")
-	err := gc.GameService.JoinGameRoom(c, roomID)
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, dtos.CreateGameRoomResponseDto{
-			Message: "failed to join room",
-			Ok:      false,
-		})
-		return
-	}
+	gc.GameService.JoinGameRoom(c, roomID)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, dtos.CreateGameRoomResponseDto{
+	// 		Message: "failed to join room",
+	// 		Ok:      false,
+	// 	})
+	// 	return
+	// }
 
-	c.JSON(http.StatusOK, dtos.JoinGameRoomResponseDto{
-		Message: "join room successfully",
-		Ok:      true,
-	})
+	// c.JSON(http.StatusOK, dtos.JoinGameRoomResponseDto{
+	// 	Message: "join room successfully",
+	// 	Ok:      true,
+	// })
 }
 
 func (gc *GameController) HandleGetGameRooms(c *gin.Context) {

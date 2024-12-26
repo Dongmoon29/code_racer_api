@@ -42,7 +42,8 @@ func (app *Application) Mount() *gin.Engine {
 	// webHost := env.GetString("CODERACER_WEB", "localhost:3000")
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		// AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"DELETE", "POST", "GET", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length", "Set-Cookie"},
@@ -163,6 +164,7 @@ func (app *Application) GetUser(ctx context.Context, userID int) (*mapper.Mapped
 }
 
 func (app *Application) AuthMiddleware() gin.HandlerFunc {
+	app.Logger.Debugln("AuthMiddleware() called")
 	return func(c *gin.Context) {
 		token, err := c.Cookie("token")
 		if err != nil {

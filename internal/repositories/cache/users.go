@@ -49,13 +49,10 @@ func (s *UserRedisImpl) Set(ctx context.Context, user *mapper.MappedUser) error 
 }
 
 func (s *UserRedisImpl) Delete(ctx context.Context, userID int) error {
-	// Redis 키 생성
 	cacheKey := fmt.Sprintf("user-%d", userID)
 
-	// Redis 키 삭제
 	err := s.rdb.Del(ctx, cacheKey).Err()
 	if err != nil {
-		// 에러 처리
 		return fmt.Errorf("failed to delete cache for user %d: %w", userID, err)
 	}
 

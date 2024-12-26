@@ -38,31 +38,27 @@ func (s *GameRedisImpl) Get(ctx context.Context, gameID string) (*models.GameSta
 }
 
 func (s *GameRedisImpl) GetAll(ctx context.Context) ([]models.GameState, error) {
-	// 1. Redis에서 모든 게임 키 검색
+	// TODO implement pagination
 	keys, err := s.rdb.Keys(ctx, "game-*").Result()
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. 결과 저장할 슬라이스 초기화
 	var games []models.GameState
 
-	// 3. 각 키에 대해 데이터 조회 및 파싱
 	for _, key := range keys {
 		data, err := s.rdb.Get(ctx, key).Result()
 		if err == redis.Nil {
-			continue // 데이터 없으면 건너뜀
+			continue
 		} else if err != nil {
-			return nil, err // 기타 에러 처리
+			return nil, err
 		}
 
-		// JSON 역직렬화
 		var game models.GameState
 		if err := json.Unmarshal([]byte(data), &game); err != nil {
 			return nil, err
 		}
 
-		// 게임 목록에 추가
 		games = append(games, game)
 	}
 
@@ -81,16 +77,12 @@ func (s *GameRedisImpl) Set(ctx context.Context, game *models.GameState) error {
 }
 
 func (s *GameRedisImpl) Delete(ctx context.Context, userID int) error {
-	// Redis 키 생성
 	cacheKey := fmt.Sprintf("user-%d", userID)
 
-	// Redis 키 삭제
 	err := s.rdb.Del(ctx, cacheKey).Err()
 	if err != nil {
-		// 에러 처리
 		return fmt.Errorf("failed to delete cache for user %d: %w", userID, err)
 	}
 
-	// 성공 시 nil 반환
 	return nil
 }

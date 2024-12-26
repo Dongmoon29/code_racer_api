@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Dongmoon29/code_racer_api/internal/mapper"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories/cache"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories/models"
 	"github.com/gin-gonic/gin"
@@ -37,8 +38,6 @@ func NewGameService(gameStore cache.GameRedisStoreInterface, logger *zap.Sugared
 	})
 	return instance
 }
-
-var mu sync.Mutex
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -111,7 +110,8 @@ func (gs *GameService) GetAllGameRooms() ([]models.GameState, error) {
 	return gameRooms, nil
 }
 
-func (gs *GameService) CreateGameRoom(roomName string, user *models.User) (*string, error) {
+func (gs *GameService) CreateGameRoom(roomName string, user *mapper.MappedUser) (*string, error) {
+	// how can I make this unique for sure?
 	gameID := uuid.NewString()
 
 	gameState := &models.GameState{
@@ -141,13 +141,13 @@ func (gs *GameService) CreateGameRoom(roomName string, user *models.User) (*stri
 
 func (gc *GameService) JoinGameRoom(c *gin.Context, roomID string) error {
 	ctx := context.Background()
+	gc.logger.Debugln("=========== inside of JoinGameRoom() ===========")
 
 	roomName, err := gc.gameStore.Get(ctx, roomID)
 	if err != nil || roomName == nil {
 		return fmt.Errorf("cannot find a room with id in redis: %s", roomID)
 	}
 
-	// room, ok := gameRooms.Load(fmt.Sprintf("game-%s", roomID))
 	room, ok := gameRooms.Load(roomID)
 	if !ok {
 		return fmt.Errorf("cannot find a room with id in in memory: %s", roomID)
@@ -155,11 +155,12 @@ func (gc *GameService) JoinGameRoom(c *gin.Context, roomID string) error {
 
 	gameRoom, ok := room.(*GameRoom)
 	if !ok {
-		return fmt.Errorf("invalid room type")
+		return fmt.Errorf("inside JoinGameRoom(), cannot convert gameRoom")
 	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		gc.logger.Debug("inside of Upgrade")
 		return fmt.Errorf("failed to upgrade WebSocket with roomID: %s", roomID)
 	}
 
@@ -176,6 +177,7 @@ func (gc *GameService) JoinGameRoom(c *gin.Context, roomID string) error {
 }
 
 func (c *WebsocketClient) readPump(room *GameRoom) {
+	log.Println("WebSocket readPump 시작")
 	defer func() {
 		log.Println("close connection")
 		room.unregister <- c
@@ -183,6 +185,7 @@ func (c *WebsocketClient) readPump(room *GameRoom) {
 	}()
 	for {
 		_, message, err := c.conn.ReadMessage()
+		fmt.Printf("message received ----> %s\n", message)
 		if err != nil {
 			fmt.Printf("error happen %v\n", err.Error())
 			break
@@ -192,6 +195,7 @@ func (c *WebsocketClient) readPump(room *GameRoom) {
 }
 
 func (c *WebsocketClient) writePump() {
+	log.Println("WebSocket writePump 시작")
 	defer func() {
 		c.conn.Close()
 	}()
