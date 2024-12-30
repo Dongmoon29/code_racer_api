@@ -71,7 +71,6 @@ func newGameRoom() *GameRoom {
 	}
 }
 
-// TODO
 func (room *GameRoom) run() {
 	for {
 		select {
@@ -170,14 +169,14 @@ func (gc *GameService) JoinGameRoom(c *gin.Context, roomID string) error {
 	}
 	gameRoom.register <- client
 
-	go client.readPump(gameRoom)
-	go client.writePump()
+	go client.readMessage(gameRoom)
+	go client.writeMessage()
 
 	return nil
 }
 
-func (c *WebsocketClient) readPump(room *GameRoom) {
-	log.Println("WebSocket readPump 시작")
+func (c *WebsocketClient) readMessage(room *GameRoom) {
+	log.Println("WebSocket readMessage 시작")
 	defer func() {
 		log.Println("close connection")
 		room.unregister <- c
@@ -194,8 +193,8 @@ func (c *WebsocketClient) readPump(room *GameRoom) {
 	}
 }
 
-func (c *WebsocketClient) writePump() {
-	log.Println("WebSocket writePump 시작")
+func (c *WebsocketClient) writeMessage() {
+	log.Println("WebSocket writeMessage 시작")
 	defer func() {
 		c.conn.Close()
 	}()
