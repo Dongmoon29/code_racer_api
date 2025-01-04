@@ -121,8 +121,7 @@ func (app *Application) setGameRoutes(rg *gin.RouterGroup) {
 	gg.Use(app.AuthMiddleware())
 	{
 		gg.GET("", gc.HandleGetGameRooms)
-		gg.POST("", gc.HandleCreateGameRoom)
-		gg.GET("/:id", gc.HandleJoinGameRoom)
+		gg.GET("/ws", gc.HandleGameWebSocket)
 	}
 }
 

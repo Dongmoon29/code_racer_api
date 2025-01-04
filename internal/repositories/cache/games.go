@@ -16,7 +16,7 @@ type GameRedisImpl struct {
 	rdb *redis.Client
 }
 
-func (s *GameRedisImpl) Get(ctx context.Context, gameID string) (*models.GameState, error) {
+func (s *GameRedisImpl) Get(ctx context.Context, gameID string) (*models.RedisGameRoom, error) {
 	cacheKey := fmt.Sprintf("game-%s", gameID)
 
 	data, err := s.rdb.Get(ctx, cacheKey).Result()
@@ -26,7 +26,7 @@ func (s *GameRedisImpl) Get(ctx context.Context, gameID string) (*models.GameSta
 		return nil, err
 	}
 
-	var game models.GameState
+	var game models.RedisGameRoom
 	if data != "" {
 		err := json.Unmarshal([]byte(data), &game)
 		if err != nil {
@@ -37,14 +37,14 @@ func (s *GameRedisImpl) Get(ctx context.Context, gameID string) (*models.GameSta
 	return &game, nil
 }
 
-func (s *GameRedisImpl) GetAll(ctx context.Context) ([]models.GameState, error) {
+func (s *GameRedisImpl) GetAll(ctx context.Context) ([]models.RedisGameRoom, error) {
 	// TODO implement pagination
 	keys, err := s.rdb.Keys(ctx, "game-*").Result()
 	if err != nil {
 		return nil, err
 	}
 
-	var games []models.GameState
+	var games []models.RedisGameRoom
 
 	for _, key := range keys {
 		data, err := s.rdb.Get(ctx, key).Result()
@@ -54,7 +54,7 @@ func (s *GameRedisImpl) GetAll(ctx context.Context) ([]models.GameState, error) 
 			return nil, err
 		}
 
-		var game models.GameState
+		var game models.RedisGameRoom
 		if err := json.Unmarshal([]byte(data), &game); err != nil {
 			return nil, err
 		}
@@ -65,7 +65,7 @@ func (s *GameRedisImpl) GetAll(ctx context.Context) ([]models.GameState, error) 
 	return games, nil
 }
 
-func (s *GameRedisImpl) Set(ctx context.Context, game *models.GameState) error {
+func (s *GameRedisImpl) Set(ctx context.Context, game *models.RedisGameRoom) error {
 	cacheKey := fmt.Sprintf("game-%s", game.ID)
 
 	json, err := json.Marshal(game)

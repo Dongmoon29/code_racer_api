@@ -15,9 +15,9 @@ type UsersRedisStoreInterface interface {
 }
 
 type GameRedisStoreInterface interface {
-	Get(context.Context, string) (*models.GameState, error)
-	GetAll(context.Context) ([]models.GameState, error)
-	Set(context.Context, *models.GameState) error
+	Get(context.Context, string) (*models.RedisGameRoom, error)
+	GetAll(context.Context) ([]models.RedisGameRoom, error)
+	Set(context.Context, *models.RedisGameRoom) error
 	Delete(context.Context, int) error
 }
 

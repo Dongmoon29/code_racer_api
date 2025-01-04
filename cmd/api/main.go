@@ -12,6 +12,7 @@ import (
 	"github.com/Dongmoon29/code_racer_api/internal/env"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories"
 	"github.com/Dongmoon29/code_racer_api/internal/repositories/cache"
+	"github.com/Dongmoon29/code_racer_api/internal/services/game"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 )
@@ -61,7 +62,7 @@ func main() {
 	var rdb *redis.Client
 	if cfg.RedisConfig.Enabled {
 		rdb = cache.NewRedisClient(cfg.RedisConfig.Addr, cfg.RedisConfig.Password, cfg.RedisConfig.Db)
-		logger.Info("redis cache connection established")
+		logger.Info("redis connection established")
 
 		defer rdb.Close()
 	}
@@ -75,6 +76,9 @@ func main() {
 	}
 
 	router := app.Mount()
+	// create gameManager
+	// TODO: I'm not sure this is the best way to handle this here
+	go game.NewGameManager()
 	err = app.Run(router)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Fatal("server terminated unexpectedly", zap.Error(err))

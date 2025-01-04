@@ -66,6 +66,16 @@ func (uc *AuthController) HandleLogout(c *gin.Context) {
 	userID := userMap.ID
 	uc.AuthService.DeleteSession(c.Request.Context(), int(userID))
 
+	c.SetCookie(
+		"token",         // 쿠키 이름
+		"",              // 빈 값
+		-1,              // 만료 시간 (음수 값으로 설정하면 즉시 삭제)
+		"/",             // 경로
+		"",              // 도메인
+		false,           // Secure 여부
+		true,            // HttpOnly 여부
+	)
+
 	c.JSON(http.StatusOK, gin.H{"message": "logout successful"})
 }
 
@@ -82,27 +92,23 @@ func (uc *AuthController) HandleUserProfile(c *gin.Context) {
 func (uc *AuthController) HandleSignin(c *gin.Context) {
 	var signinRequestDto dtos.SigninRequestDto
 
-	// 1. 요청 바인딩 및 검증
 	if err := c.ShouldBindJSON(&signinRequestDto); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	// 2. 사용자 검증
 	user, err := uc.AuthService.FindAndVerifyUserByEmail(signinRequestDto)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 3. JWT 토큰 생성
 	token, err := utils.GenerateJWT(fmt.Sprint(user.ID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
-	// 4. Redis 세션 저장
 	err = uc.AuthService.SaveSession(c.Request.Context(), user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
