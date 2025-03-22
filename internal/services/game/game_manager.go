@@ -39,26 +39,21 @@ func (gm *GameManager) Run() {
 
 // handlePlayerJoin handles a new player joining the game.
 func (gm *GameManager) handlePlayerJoin(player *Player) {
-	// Add the player to the register channel
 	player.send = make(chan []byte, 256)
 
-	// Send the current rooms list to the newly connected player
-	roomsList := gm.getRoomsList()
-	msg, _ := json.Marshal(Message{Type: "room_list", Payload: roomsList})
+	msg, _ := json.Marshal(Message{Type: "init", Payload: nil})
 	player.send <- msg
 
-	// Start the read and write pumps for the player
 	go player.writePump()
 	go player.readPump(gm)
 }
 
-// handlePlayerLeave handles a player leaving the game.
 func (gm *GameManager) handlePlayerLeave(player *Player) {
 	if player.Room != nil {
+		// 룸 내부 변경은 룸의 락으로 보호
 		player.Room.Mutex.Lock()
 		delete(player.Room.Players, player.ID)
 
-		// If the player is a host, update the room status and assign a new host
 		if player.IsHost && len(player.Room.Players) > 0 {
 			for _, p := range player.Room.Players {
 				p.IsHost = true
@@ -66,25 +61,24 @@ func (gm *GameManager) handlePlayerLeave(player *Player) {
 			}
 		}
 
-		// If the room is empty, delete it
 		if len(player.Room.Players) == 0 {
 			player.Room.Status = "closed"
+			// gm.Rooms 수정 전 gm.Mutex를 잡음
+			gm.Mutex.Lock()
 			delete(gm.Rooms, player.Room.ID)
+			gm.Mutex.Unlock()
 		} else {
-			// Notify other players in the room about the player leaving
 			player.Room.Broadcast <- []byte(fmt.Sprintf("Player %d left", player.ID))
 		}
 		player.Room.Mutex.Unlock()
-		// Broadcast the updated rooms list to all players
+
 		gm.broadcastRoomsList()
 	}
 }
 
 // CreateRoom creates a new game room.
 func (gm *GameManager) CreateRoom(player *Player) *Room {
-	gm.Mutex.Lock()
-	defer gm.Mutex.Unlock()
-
+	// 룸 생성에 필요한 데이터 준비
 	roomID := uuid.NewString()
 	room := &Room{
 		ID:        roomID,
@@ -97,13 +91,18 @@ func (gm *GameManager) CreateRoom(player *Player) *Room {
 	player.Room = room
 	player.IsHost = true
 	player.IsReady = false
+
+	// gm.Rooms에 추가 및 룸 런 실행은 gm.Mutex로 보호
+	gm.Mutex.Lock()
 	gm.Rooms[roomID] = room
+	gm.Mutex.Unlock()
+
 	go room.run()
 
-	// Notify the player about the room creation
+	// 채널 송신은 락 밖에서 진행
 	player.send <- createRoomMessage(room, player)
 
-	// Broadcast the updated rooms list to all players
+	// 방 목록 브로드캐스트 역시 락 밖에서 처리
 	gm.broadcastRoomsList()
 
 	return room
@@ -172,7 +171,7 @@ func (gm *GameManager) getRoomsList() []map[string]interface{} {
 // broadcastRoomsList sends the updated rooms list to all connected players.
 func (gm *GameManager) broadcastRoomsList() {
 	roomsList := gm.getRoomsList()
-	msg, _ := json.Marshal(Message{Type: "roomsList", Payload: roomsList})
+	msg, _ := json.Marshal(Message{Type: "rooms_list", Payload: roomsList})
 
 	for _, room := range gm.Rooms {
 		for _, player := range room.Players {

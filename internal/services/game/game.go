@@ -10,8 +10,6 @@ import (
 	"log"
 )
 
-
-
 // Game represents the game state.
 type Game struct {
 	// TODO: implement game structure here
@@ -41,7 +39,7 @@ func createRoomMessage(room *Room, player *Player) []byte {
 
 	// Create the message
 	msg := Message{
-		Type:    "roomInfo",
+		Type:    MessageTypeCreateRoom,
 		Payload: payload,
 	}
 
@@ -54,4 +52,3 @@ func createRoomMessage(room *Room, player *Player) []byte {
 
 	return msgBytes
 }
-

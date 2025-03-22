@@ -1,9 +1,7 @@
 package main
 
 import (
-	"errors"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/Dongmoon29/code_racer_api/internal/bootstrap"
@@ -19,6 +17,10 @@ import (
 
 func main() {
 	duration, _ := time.ParseDuration("15m")
+	gameManager := game.NewGameManager()
+	// run gameManager
+	go gameManager.Run()
+
 	cfg := &config.Config{
 		DbConfig: config.DbConfig{
 			Host:         env.GetString("DB_HOST", "localhost"),
@@ -68,19 +70,16 @@ func main() {
 	}
 	cacheStorage := cache.NewRedisStorage(rdb)
 
-	app := &bootstrap.Application{
+	app := &config.Application{
 		Logger:       sugar,
 		Config:       cfg,
 		Repository:   repository,
 		CacheStorage: cacheStorage,
+		GameManager:  gameManager,
 	}
 
-	router := app.Mount()
-	// create gameManager
-	// TODO: I'm not sure this is the best way to handle this here
-	go game.NewGameManager()
-	err = app.Run(router)
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		logger.Fatal("server terminated unexpectedly", zap.Error(err))
+	router := bootstrap.Mount(app)
+	if err := bootstrap.Run(app, router); err != nil {
+		log.Fatal(err)
 	}
 }

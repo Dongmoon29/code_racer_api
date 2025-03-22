@@ -46,7 +46,6 @@ func (gc *GameController) HandleGetGameRooms(c *gin.Context) {
 	})
 }
 
-
 func (gc *GameController) HandleGameWebSocket(c *gin.Context) {
 	conn, err := gc.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -57,12 +56,12 @@ func (gc *GameController) HandleGameWebSocket(c *gin.Context) {
 
 	user, ok := c.Get("user")
 	if !ok {
-		gc.logger.Errorf("inside of HandleGameWebSocket(), cannot find user.")
+		gc.logger.Errorf("HandleGameWebSocket(), cannot find user.")
 	}
 
 	convertedUser, ok := user.(*mapper.MappedUser)
 	if !ok {
-		gc.logger.Errorf("inside of HandleGameWebSocket(), cannot convert user.")
+		gc.logger.Errorf("HandleGameWebSocket(), cannot convert user.")
 	}
 
 	userID := convertedUser.ID

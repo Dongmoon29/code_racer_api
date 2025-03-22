@@ -77,9 +77,9 @@ func (p *Player) handleMessage(message []byte, manager *GameManager) {
 	}
 
 	switch msg.Type {
-	case "createRoom":
+	case MessageTypeCreateRoom:
 		manager.CreateRoom(p)
-	case "joinRoom":
+	case MessageTypeJoinRoom:
 		payload, ok := msg.Payload.(map[string]interface{})
 		if !ok {
 			log.Println("Invalid payload for joinRoom")
@@ -91,7 +91,7 @@ func (p *Player) handleMessage(message []byte, manager *GameManager) {
 			return
 		}
 		manager.JoinRoom(p, roomID)
-	case "playerReady":
+	case MessageTypePlayerReady:
 		p.IsReady = true
 		// Check if all players in the room are ready and start the game
 		if p.Room != nil {
@@ -106,10 +106,9 @@ func (p *Player) handleMessage(message []byte, manager *GameManager) {
 				p.Room.StartGame()
 			}
 		}
-	case "start":
+	case MessageTypeStart:
 		if p.Room != nil && p.IsHost {
 			p.Room.StartGame()
 		}
-
 	}
 }

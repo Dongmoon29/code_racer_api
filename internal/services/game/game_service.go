@@ -36,8 +36,8 @@ func NewGameService(gameStore cache.GameRedisStoreInterface, logger *zap.Sugared
 
 func (gs *GameService) ConnectGameSocketConnect(conn *websocket.Conn, userID uint) error {
 	if gs.gameManager == nil {
-		gs.logger.Errorf("inside of ConnectGameSocketConnect(), gameManager is not created.")
-		return fmt.Errorf("insdie of COnnectGmaeSocketConnect()")
+		gs.logger.Errorf("ConnectGameSocketConnect(), gameManager is not created.")
+		return fmt.Errorf("gameManager is not created.")
 	}
 	player := &Player{
 		ID:   userID,

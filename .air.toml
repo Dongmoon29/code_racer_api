@@ -1,0 +1,17 @@
+# [Air] 기본 설정
+root = "." # 프로젝트 루트 디렉터리
+tmp_dir = "tmp" # 임시 파일을 저장할 디렉터리
+
+[build]
+cmd = "go build -o tmp/main ." # 빌드 명령어
+bin = "tmp/main" # 실행할 바이너리 경로
+full_bin = "tmp/main" # 실행할 전체 바이너리 경로
+
+[log]
+time = true # 로그에 타임스탬프 표시
+
+[watcher]
+# 감시할 디렉터리 목록
+includes = ["."]
+# 감시에서 제외할 파일/디렉터리 목록
+excludes = ["tmp", "vendor", "node_modules"]
