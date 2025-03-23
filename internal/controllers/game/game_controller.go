@@ -47,7 +47,6 @@ func (gc *GameController) HandleGetGameRooms(c *gin.Context) {
 	})
 }
 
-// TODO
 func (gc *GameController) HandleGameWebSocket(c *gin.Context) {
 	gc.logger.Debug("웹소켓 연결 시도 감지됨")
 	gc.logger.Debug("요청 헤더:")

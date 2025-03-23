@@ -85,6 +85,11 @@ func (gm *GameManager) handlePlayerLeave(player *Player) {
 
 // CreateRoom creates a new game room.
 func (gm *GameManager) CreateRoom(player *Player) *Room {
+	// TODO only allow 1 game room creation per 1 user
+	// write here
+	//
+	//
+
 	// 룸 생성에 필요한 데이터 준비
 	roomID := uuid.NewString()
 	room := &Room{
