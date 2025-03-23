@@ -67,13 +67,13 @@ func (uc *AuthController) HandleLogout(c *gin.Context) {
 	uc.AuthService.DeleteSession(c.Request.Context(), int(userID))
 
 	c.SetCookie(
-		"token",         // 쿠키 이름
-		"",              // 빈 값
-		-1,              // 만료 시간 (음수 값으로 설정하면 즉시 삭제)
-		"/",             // 경로
-		"",              // 도메인
-		false,           // Secure 여부
-		true,            // HttpOnly 여부
+		"token",
+		"",
+		-1,
+		"/",
+		"",
+		false,
+		true,
 	)
 
 	c.JSON(http.StatusOK, gin.H{"message": "logout successful"})
@@ -108,12 +108,13 @@ func (uc *AuthController) HandleSignin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
+	// if redis is enabled
 
-	err = uc.AuthService.SaveSession(c.Request.Context(), user)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
-		return
-	}
+	// err = uc.AuthService.SaveSession(c.Request.Context(), user)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
+	// 	return
+	// }
 
 	// 5. 쿠키 설정
 	c.SetCookie(
@@ -125,5 +126,5 @@ func (uc *AuthController) HandleSignin(c *gin.Context) {
 		false, // Secure = false (HTTPS가 아닌 HTTP에서 테스트용)
 		true,  // HttpOnly
 	)
-	c.JSON(http.StatusOK, gin.H{"ok": true, "user": user})
+	c.JSON(http.StatusOK, gin.H{"ok": true, "user": user, "token": token})
 }

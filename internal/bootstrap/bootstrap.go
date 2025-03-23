@@ -93,13 +93,14 @@ func setUserRoutes(app *config.Application, rg *gin.RouterGroup) {
 	{
 		cg.POST("/signin", uc.HandleSignin)
 		cg.POST("/signup", uc.HandleSignup)
+
 		cg.POST("/logout", middlewares.AuthMiddleware(app), uc.HandleLogout)
 		cg.GET("/profile", middlewares.AuthMiddleware(app), uc.HandleUserProfile)
 	}
 }
 
 func setGameRoutes(app *config.Application, rg *gin.RouterGroup) {
-	gs := gameService.NewGameService(app.CacheStorage.Games, app.Logger)
+	gs := gameService.NewGameService(app.GameManager, app.CacheStorage.Games, app.Logger)
 	gc := gameController.NewGameController(gs, app.Logger)
 
 	gg := rg.Group("/games")
@@ -107,6 +108,8 @@ func setGameRoutes(app *config.Application, rg *gin.RouterGroup) {
 	{
 		gg.GET("", gc.HandleGetGameRooms)
 		gg.GET("/ws", gc.HandleGameWebSocket)
+		gg.GET("/status", gc.HandleGetGameManagerStatus)
+
 	}
 }
 

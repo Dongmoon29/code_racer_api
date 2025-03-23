@@ -14,6 +14,7 @@ type GameManager struct {
 	Mutex      sync.Mutex       `json:"-"`
 	Register   chan *Player     `json:"-"`
 	Unregister chan *Player     `json:"-"`
+	IsRunning  bool             `json:"-"`
 }
 
 // NewGameManager creates a new GameManager.
@@ -27,9 +28,15 @@ func NewGameManager() *GameManager {
 
 // Run starts the GameManager loop.
 func (gm *GameManager) Run() {
+	gm.IsRunning = true
+	defer func() {
+		gm.IsRunning = false
+	}()
+	fmt.Println("Game Manager started")
 	for {
 		select {
 		case player := <-gm.Register:
+			fmt.Println("registered player")
 			gm.handlePlayerJoin(player)
 		case player := <-gm.Unregister:
 			gm.handlePlayerLeave(player)
@@ -41,7 +48,7 @@ func (gm *GameManager) Run() {
 func (gm *GameManager) handlePlayerJoin(player *Player) {
 	player.send = make(chan []byte, 256)
 
-	msg, _ := json.Marshal(Message{Type: "init", Payload: nil})
+	msg, _ := json.Marshal(Message{Type: "init", Payload: map[string]string{"message": "hello"}})
 	player.send <- msg
 
 	go player.writePump()

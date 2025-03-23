@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -14,6 +15,15 @@ import (
 
 func AuthMiddleware(app *config.Application) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		app.Logger.Debugln("AuthMiddleware 시작")
+
+		// 요청 정보 출력
+		fmt.Printf("URL: %s\n", c.Request.URL.Path)
+		fmt.Printf("Method: %s\n", c.Request.Method)
+		fmt.Printf("Headers: %v\n", c.Request.Header)
+
+		// 나머지 코드...
+
 		token, err := c.Cookie("token")
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token is missing"})

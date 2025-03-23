@@ -18,7 +18,6 @@ import (
 func main() {
 	duration, _ := time.ParseDuration("15m")
 	gameManager := game.NewGameManager()
-	// run gameManager
 	go gameManager.Run()
 
 	cfg := &config.Config{
